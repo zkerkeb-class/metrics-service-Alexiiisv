@@ -1,8 +1,18 @@
 import { Webhook } from "webhook-discord";
+import dotenv from "dotenv";
 
-const hook = new Webhook(
-  "https://discord.com/api/webhooks/1337005135074951240/PnHi6rvfJ6HPgTJ-EzTbbw4yBr0KqAjxEhq4YQgwStRDETUSDmQmT7orO0MnaaanBpmT"
-);
-// const hook = new Webhook(process.env.DISCORD_URL || "");
+dotenv.config();
+
+if (!process.env.DISCORD_URL) {
+  console.warn("⚠️ DISCORD_URL n'est pas défini dans le fichier .env");
+}
+
+const hook = process.env.DISCORD_URL
+  ? new Webhook(process.env.DISCORD_URL)
+  : null;
+
+if (!hook) {
+  console.warn("⚠️ Le webhook Discord n'a pas été initialisé");
+}
 
 export default hook;

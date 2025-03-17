@@ -1,9 +1,17 @@
 import cron from "node-cron";
-import { sendInfo, sendWarn } from "../alerts/alert";
+import { sendInfo, sendStatusRecap, sendWarn } from "../alerts/alert";
+import { SERVICES_TO_MONITOR } from "../constant";
 
 const TIMEOUT_MS = 5000; // 5 secondes de timeout
 
-async function checkService(url: string, serviceName: string) {
+async function checkService(
+  url: string,
+  serviceName: string
+): Promise<{
+  name: string;
+  isOnline: boolean;
+  message: string;
+}> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -12,59 +20,62 @@ async function checkService(url: string, serviceName: string) {
     clearTimeout(timeoutId);
 
     if (response.ok) {
-      sendInfo(serviceName, "Online");
+      return { name: serviceName, isOnline: true, message: "Online" };
     } else {
-      sendWarn(serviceName, `Offline (Status: ${response.status})`);
+      return {
+        name: serviceName,
+        isOnline: false,
+        message: `Offline (Status: ${response.status})`,
+      };
     }
   } catch (error) {
     if (error instanceof Error) {
       if (error.name === "AbortError") {
-        sendWarn(serviceName, "Offline (Timeout)");
+        return {
+          name: serviceName,
+          isOnline: false,
+          message: "Offline (Timeout)",
+        };
       } else if (error.message.includes("ECONNREFUSED")) {
-        sendWarn(serviceName, "Offline (Connection Refused)");
+        return {
+          name: serviceName,
+          isOnline: false,
+          message: "Offline (Connection Refused)",
+        };
       } else {
-        sendWarn(serviceName, `Offline (Error: ${error.message})`);
+        return {
+          name: serviceName,
+          isOnline: false,
+          message: `Offline (Error: ${error.message})`,
+        };
       }
     }
+    return {
+      name: serviceName,
+      isOnline: false,
+      message: "Offline (Unknown Error)",
+    };
   }
 }
 
-export const frontendCheck: cron.ScheduledTask = cron.schedule(
-  "*/15 * * * * *",
-  () => {
-    checkService("https://speautyfayye.ckx.app/fr/", "Front");
-  }
-);
-
-// Monitoring du Service de Notification
+// Monitoring de tous les services
 // S'exécute toutes les 15 secondes
-// Vérifie l'endpoint /health qui renvoie le statut du service
-export const notificationServiceCheck: cron.ScheduledTask = cron.schedule(
+export const servicesCheck: cron.ScheduledTask = cron.schedule(
   "*/15 * * * * *",
-  () => {
-    checkService(
-      `${process.env.NOTIFICATION_SERVICE_URL}/health`,
-      "Notification Service"
+  async () => {
+    const results = await Promise.all(
+      SERVICES_TO_MONITOR.map((service) =>
+        checkService(service.url, service.name)
+      )
     );
+    sendStatusRecap(results);
+
+    results.forEach((result) => {
+      if (result.isOnline) {
+        sendInfo(result.name, result.message);
+      } else {
+        sendWarn(result.name, result.message);
+      }
+    });
   }
 );
-
-// Monitoring du Service d'Authentification
-// S'exécute toutes les 15 secondes
-// Vérifie l'endpoint /health qui renvoie le statut du service
-export const authServiceCheck: cron.ScheduledTask = cron.schedule(
-  "*/15 * * * * *",
-  () => {
-    checkService(
-      `${process.env.AUTH_SERVICE_URL}/health`,
-      "Authentification Service"
-    );
-  }
-);
-
-// export const notOnline: cron.ScheduledTask = cron.schedule(
-//   "* * * * * *",
-//   () => {
-//     sendWarn("Cron", "This is a cron job running every second");
-//   }
-// );

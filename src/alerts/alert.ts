@@ -3,6 +3,7 @@ import hook from "./index";
 import fs from "fs";
 import path from "path";
 import { formatDate } from "../cron/utils";
+import { SERVICES_TO_MONITOR } from "../constant";
 
 interface LogEntry {
   date: string;
@@ -54,12 +55,87 @@ function shouldLog(sender: string, message: string): boolean {
   return false;
 }
 
-function logMessage(sender: string, message: string, level: string): void {
-  // Vérifier si on doit logger le message
-  // if (!shouldLog(sender, message)) {
-  //   return;
-  // }
+function getLatestStatuses(): Map<
+  string,
+  { isOnline: boolean; message: string }
+> {
+  const logFilePath = path.join(
+    __dirname,
+    `../storage/${formatDate(new Date())}.json`
+  );
+  const statuses = new Map<string, { isOnline: boolean; message: string }>();
 
+  if (fs.existsSync(logFilePath)) {
+    try {
+      const logs: LogEntry[] = JSON.parse(
+        fs.readFileSync(logFilePath, "utf-8")
+      );
+
+      // Groupe les logs par sender et prend le plus récent
+      SERVICES_TO_MONITOR.forEach((service) => {
+        const latestLog = logs
+          .filter((log) => log.sender === service.name)
+          .sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          )[0];
+
+        if (latestLog) {
+          statuses.set(service.name, {
+            isOnline: latestLog.severity === "INFO",
+            message: latestLog.message,
+          });
+        }
+      });
+    } catch (error) {
+      console.error("Erreur lors de la lecture des logs:", error);
+    }
+  }
+  return statuses;
+}
+
+function sendStatusRecap(
+  results: Array<{ name: string; isOnline: boolean; message: string }>
+) {
+  const previousStatuses = getLatestStatuses();
+
+  // Vérifie si un statut a changé
+  const hasStatusChanged = results.some((result) => {
+    const previous = previousStatuses.get(result.name);
+    return !previous || previous.isOnline !== result.isOnline;
+  });
+
+  if (hasStatusChanged) {
+    const msg = new MessageBuilder()
+      .setName("Status Monitor")
+      .setColor("#00ff00")
+      .setTitle("📊 État des Services")
+      .setText("@everyone");
+
+    const onlineServices = results
+      .filter((r) => r.isOnline)
+      .map((r) => {
+        return `${r.name}`;
+      })
+      .join("\n");
+
+    const offlineServices = results
+      .filter((r) => !r.isOnline)
+      .map((r) => {
+        return `${r.name}`;
+      })
+      .join("\n");
+
+    let description = "**🟢 Services En Ligne:**\n";
+    description += onlineServices || "Aucun\n";
+    description += "\n**🔴 Services Hors Ligne:**\n";
+    description += offlineServices || "Aucun";
+
+    msg.setDescription(description);
+    sendSend(msg);
+  }
+}
+
+function logMessage(sender: string, message: string, level: string): void {
   let logs: LogEntry[] = [];
 
   // Lire le fichier JSON existant s'il existe
@@ -120,4 +196,11 @@ function sendSend(message: MessageBuilder): void {
   if (hook) hook.send(message);
 }
 
-export { sendWarn, sendInfo, sendError, sendSuccess, sendSend };
+export {
+  sendWarn,
+  sendInfo,
+  sendError,
+  sendSuccess,
+  sendSend,
+  sendStatusRecap,
+};

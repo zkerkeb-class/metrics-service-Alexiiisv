@@ -17,3 +17,18 @@ export const stillOffline: MessageBuilder = new MessageBuilder()
   .setColor("#696969")
   .setText("Still Offline")
   .setDescription("Still Offline");
+
+export const SERVICES_TO_MONITOR = [
+  {
+    url: "https://speautyfayye.ckx.app/fr/",
+    name: "Front",
+  },
+  {
+    url: `${process.env.NOTIFICATION_SERVICE_URL}/health`,
+    name: "Notification Service",
+  },
+  {
+    url: `${process.env.AUTH_SERVICE_URL}/health`,
+    name: "Authentification Service",
+  },
+];

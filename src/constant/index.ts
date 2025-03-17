@@ -1,22 +1,5 @@
-import { MessageBuilder } from "webhook-discord";
-
-export const WentOffline: MessageBuilder = new MessageBuilder()
-  .setName("API")
-  .setColor("#696969")
-  .setText("Went Offline")
-  .setDescription("Went Offline");
-
-export const WentOnline: MessageBuilder = new MessageBuilder()
-  .setName("API")
-  .setColor("#696969")
-  .setText("Went Online")
-  .setDescription("Went Online");
-
-export const stillOffline: MessageBuilder = new MessageBuilder()
-  .setName("API")
-  .setColor("#696969")
-  .setText("Still Offline")
-  .setDescription("Still Offline");
+import path from "path";
+import { formatDate } from "../utils";
 
 export const SERVICES_TO_MONITOR = [
   {
@@ -32,3 +15,17 @@ export const SERVICES_TO_MONITOR = [
     name: "Authentification Service",
   },
 ];
+
+export const LOG_FILE_PATH = path.join(
+  __dirname,
+  `../storage/${formatDate(new Date())}.json`
+);
+
+export const DEBOUNCE_INTERVAL = 10 * 60 * 1000; // 10 minutes en millisecondes
+
+export interface LogEntry {
+  date: string;
+  severity: string;
+  sender: string;
+  message: string;
+}

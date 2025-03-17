@@ -1,9 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import { servicesCheck } from "./cron/tasks";
-import { startCronJob } from "./cron/utils";
+import { startCronJob } from "./utils";
 import { sendSend } from "./alerts/alert";
-import { WentOffline } from "./constant";
 
 dotenv.config();
 
@@ -14,7 +13,6 @@ const PORT = process.env.PORT || 3000;
 startCronJob(servicesCheck);
 
 app.get("/", (req, res) => {
-  sendSend(WentOffline);
   res.send("Hello World!");
 });
 

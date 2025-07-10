@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { servicesCheck } from "./cron/tasks";
 import { startCronJob } from "./utils";
 import { sendSend } from "./alerts/alert";
+import type { Request, Response } from "express";
 
 dotenv.config();
 
@@ -12,8 +13,8 @@ const PORT = process.env.PORT || 3000;
 // Démarrer toutes les tâches CRON
 startCronJob(servicesCheck);
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
+app.get("/", (req: Request, res: Response) => {
+  return res.send("Hello World!");
 });
 
 app.listen(PORT, () => {

@@ -3,7 +3,7 @@ import { formatDate } from "../utils";
 
 export const SERVICES_TO_MONITOR = [
   {
-    url: "https://speautyfayye.ckx.app/fr/",
+    url: `${process.env.FRONT_URL}`,
     name: "Front",
   },
   {

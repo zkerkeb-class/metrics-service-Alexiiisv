@@ -6,4 +6,4 @@ BDD_URL=http://localhost:3003
 AI_URL=http://localhost:3004
 NOTIFICATION_URL=http://localhost:3005
 PAYMENT_URL=http://localhost:3009
-METRICS_URL:http://localhost:3010
+MONITORING_URL=http://localhost:3010

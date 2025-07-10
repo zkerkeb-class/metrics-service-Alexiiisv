@@ -17,6 +17,11 @@ app.get("/", (req: Request, res: Response) => {
   return res.send("Hello World!");
 });
 
+// Route de santé
+app.get("/health", (req: Request, res: Response) => {
+  return res.json({ status: "OK", service: "monitoring-service" });
+});
+
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur http://localhost:${PORT}`);
 });
